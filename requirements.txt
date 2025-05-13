@@ -1,0 +1,14 @@
+langchain
+langgraph
+langchain-community
+langchain-core
+agno
+openai
+yfinance
+duckduckgo-search
+faiss-cpu
+sentence-transformers
+arxiv
+pypdf
+python-dotenv
+black
