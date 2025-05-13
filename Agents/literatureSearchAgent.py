@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
 from agno.agent import Agent
 from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.tools.arxiv import ArxivTools
@@ -7,7 +11,6 @@ from textwrap import dedent
 from utils.vector_db_helper import save_to_vector_db
 
 from dotenv import load_dotenv
-import os
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
@@ -77,26 +80,6 @@ def literature_search_agent():
     )
 
     return agent
-
-# def split_markdown_text(text):
-#     splitter = RecursiveCharacterTextSplitter(
-#         chunk_size = 1000,
-#         chunk_overlap = 100,
-#     )
-#     chunks = splitter.split_text(text)
-#     return [Document(page_content=chunk) for chunk in chunks]
-
-# def save_to_vector_db(text, path):
-#     from langchain_openai import OpenAIEmbeddings
-#     from langchain_community.vectorstores import FAISS
-    
-#     embeddings = OpenAIEmbeddings(
-#         model="text-embedding-3-small"
-#     )
-#     docs = split_markdown_text(text)
-#     db = FAISS.from_documents(docs, embeddings)
-#     db.save_local(path)
-
 
 def run_literature_search(query: str):
     agent = literature_search_agent()

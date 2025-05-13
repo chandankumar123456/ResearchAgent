@@ -13,3 +13,8 @@ arxiv
 pypdf
 python-dotenv
 black
+langgraph-cli[inmem]
+pyppeteer
+graphviz
+# pygraphviz
+mermaid-python

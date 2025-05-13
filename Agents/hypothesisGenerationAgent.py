@@ -1,6 +1,7 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -12,7 +13,7 @@ from agno.tools.reasoning import ReasoningTools
 from textwrap import dedent
 
 from utils.vector_db_helper import load_vector_db, save_to_vector_db
-
+from summarizationAgent import summarize_search_docs
 def hypothesis_generation_agent():
     agent = Agent(
         name="Research Hypothesis Generator",
@@ -71,6 +72,7 @@ def generate_hypothesis_from_summaries(query: str):
     Generate research hypotheses based on the summarization results stored in the vector database.
     """
     try:
+        summarize_agent_response = summarize_search_docs(query=query)
         vector_store = load_vector_db("summarizationAgentText")
     except Exception as e:
         print(f"Error loading summarization vector database: {e}")

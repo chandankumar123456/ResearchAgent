@@ -1,0 +1,32 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD
+    __start__([<p>__start__</p>]):::first
+    literature_search(literature search)
+    summarization(summarization)
+    hypothesis_generation(hypothesis generation)
+    compile_results(compile results)
+    handle_errors(handle errors)
+    __end__([<p>__end__</p>]):::last
+    
+    __start__ --> literature_search;
+    literature_search --> summarization;
+    summarization --> hypothesis_generation;
+    hypothesis_generation --> compile_results;
+    compile_results --> __end__;
+    
+    literature_search -. continue .-> summarization;
+    summarization -. continue .-> hypothesis_generation;
+    hypothesis_generation -. continue .-> compile_results;
+    
+    literature_search -.-> handle_errors;
+    summarization -.-> handle_errors;
+    hypothesis_generation -.-> handle_errors;
+    handle_errors --> __end__;
+    
+    classDef default fill:#f2f0ff,line-height:1.2
+    classDef first fill-opacity:0
+    classDef last fill:#bfb6fc

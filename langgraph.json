@@ -1,0 +1,7 @@
+{
+    "dependencies": ["."],
+    "graphs": {
+        "Research Agent": "./Graph/GraphBuilder/graph_builder.py:graph" 
+    },
+    "env": "../.env"
+}

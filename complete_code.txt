@@ -1,0 +1,423 @@
+this is my path 
+ResearchAgent
+    Agents
+        hypothesisGenerationAgent.py
+import sys
+import os
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+from dotenv import load_dotenv
+load_dotenv()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+from agno.agent import Agent
+from agno.models.openai import OpenAIChat
+from agno.tools.reasoning import ReasoningTools
+from textwrap import dedent
+
+from utils.vector_db_helper import load_vector_db, save_to_vector_db
+from summarizationAgent import summarize_search_docs
+def hypothesis_generation_agent():
+    agent = Agent(
+        name="Research Hypothesis Generator",
+        instructions=[
+            "You are an advanced Research Hypothesis Generator that analyzes academic literature and identifies research gaps.",
+            "Your primary role is to identify promising future research directions based on literature summaries.",
+            "Using the provided literature summaries, you will:",
+            "1. Identify methodological gaps in existing research",
+            "2. Detect under-explored application domains",
+            "3. Recognize limitations in current approaches",
+            "4. Propose novel combinations of existing methods",
+            "5. Generate testable hypotheses for future research",
+            "Your output should be comprehensive, scholarly, and reflect deep understanding of the research domain.",
+            "Format your response in clean Markdown with clear sections.",
+            "Maintain an objective, scholarly tone throughout your analysis."
+        ],
+        description=(
+            "I analyze academic literature summaries to identify research gaps and generate "
+            "promising hypotheses for future investigation. By detecting methodological limitations, "
+            "under-explored domains, and potential novel approaches, I help researchers discover "
+            "new research directions and opportunities for innovation."
+        ),
+        tools=[ReasoningTools(add_instructions=True)],
+        model=OpenAIChat(id="o4-mini"),
+        reasoning=True,
+        expected_output=dedent(
+            """\
+            # Research Gap Analysis and Hypothesis Generation
+
+            ## Identified Research Gaps
+            {List 3-5 specific research gaps with brief explanations}
+
+            ## Methodological Limitations
+            {List 2-3 limitations in current methodological approaches}
+
+            ## Underexplored Applications
+            {List 2-3 promising application domains that need more attention}
+
+            ## Proposed Hypotheses
+            {Generate 3-5 specific, testable research hypotheses}
+
+            ## Future Research Directions
+            {Suggest 2-3 promising research directions with rationale}
+
+            ## Integration Opportunities
+            {Identify 2-3 opportunities for integrating different approaches}
+            """
+        ),
+        show_tool_calls=True,
+    )
+    
+    return agent
+
+def generate_hypothesis_from_summaries(query: str):
+    """
+    Generate research hypotheses based on the summarization results stored in the vector database.
+    """
+    try:
+        summarize_agent_response = summarize_search_docs(query=query)
+        vector_store = load_vector_db("summarizationAgentText")
+    except Exception as e:
+        print(f"Error loading summarization vector database: {e}")
+        return "Could not load summarization results. Please run the summarization agent first."
+
+    # Retrieve Relevant Summaries
+    retriever = vector_store.as_retriever()
+    documents = retriever.invoke(query)
+    
+    if not documents:
+        return "No relevant summaries found in the database. Please run the summarization agent with a valid query first."
+
+    # Combine the Documents
+    combined_docs = "\n\n".join(doc.page_content for doc in documents)
+
+    # Use the agent to generate hypotheses
+    agent = hypothesis_generation_agent()
+    enhanced_query = (
+        f"Based on the following research summaries, identify research gaps and generate "
+        f"hypotheses for future research on the topic: '{query}'\n\n"
+        f"Research Summaries:\n{combined_docs}"
+    )
+
+    try:
+        run_response = agent.run(enhanced_query)
+        response = run_response.content
+        
+        # Save the generated hypotheses to a vector database for later use
+        save_to_vector_db(text=response, path="hypothesisGenerationAgentText")
+        
+        return response
+    except Exception as e:
+        print(f"Error in hypothesis generation: {e}")
+        return f"Error generating hypotheses: {str(e)}"
+
+
+if __name__ == "__main__":
+    query = input("Enter your research query: ")
+    hypotheses = generate_hypothesis_from_summaries(query)
+    print("\n" + "="*50 + "\n")
+    print(hypotheses)
+        literatureGenerationAgent.py
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+from agno.agent import Agent
+from agno.tools.duckduckgo import DuckDuckGoTools
+from agno.tools.arxiv import ArxivTools
+from agno.models.openai import OpenAIChat
+from agno.tools.reasoning import ReasoningTools
+from textwrap import dedent
+from utils.vector_db_helper import save_to_vector_db
+
+from dotenv import load_dotenv
+load_dotenv()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+
+def literature_search_agent():
+    agent = Agent(
+        name="Scholar Research Agent",
+        instructions=["You will get a topic name or user's propmpt edit the prompt to get the maximum results",
+            "You are an AI research scholar created by a team of data scientists to assist in academic literature discovery and synthesis.",
+            "You were trained on vast scientific knowledge and given access to online academic databases to serve researchers, students, and innovators in their pursuit of knowledge.",
+            "Your mission is to find high-quality, peer-reviewed academic papers, primarily from arXiv, and support them with relevant trusted sources from the internet using DuckDuckGo.",
+            "See expected_output for the findings in a concise, scholarly tone, formatted in clean Markdown.",
+            "Present the information in an organized, numbered or bulleted list, suitable for inclusion in academic work or technical documentation.",
+            "Maintain a tone that is helpful, intelligent, and precise — like a well-read research librarian who also happens to have superintelligence.",
+            "Your mission is to find high-quality, peer-reviewed academic papers, primarily from arXiv.",
+            "Generate a DYNAMIC markdown report with the ACTUAL search results.",
+            "For EACH paper, extract and present:",
+            "- 5-6 CRITICAL research insights or findings",
+            "Just show the core information present the paper and no metadata"
+            "Do NOT use placeholder text or templates.",
+            "The output MUST be based entirely on the real search results.",
+            "Ensure the summary is lengtht, scholarly, and information-dense.",
+        ],
+        description=(
+            "You are an AI-powered scholarly assistant, born from deep language models and fine-tuned to perform expert-level academic research. "
+            "Equipped with tools like arXiv and DuckDuckGo, she retrieves, evaluates, and summarizes scientific literature and web data with the precision of a seasoned research analyst. "
+            "Ideal for students, researchers, and professionals seeking focused and reliable knowledge."
+        ),
+        tools=[
+            DuckDuckGoTools(),
+            ArxivTools(read_arxiv_papers=True, search_arxiv=True),
+            ReasoningTools(add_instructions=True),
+        ],
+        # markdown=True,
+        model=OpenAIChat(id="o4-mini"),
+        reasoning=True,
+        expected_output=dedent(
+            """\
+            # {Title}
+
+            ## Summary
+            {One-paragraph summary highlighting key idea and results}
+
+            ## Problem
+            {What problem does this paper address?}
+
+            ## Methodology
+            {Approach, models, techniques used — briefly and clearly}
+
+            ## Results
+            {Quantitative/qualitative outcomes — what's improved or proven?}
+
+            ## Contributions
+            {List of 3 bullet-point core contributions}
+
+            ## Limitations
+            {Known issues, trade-offs, or assumptions}
+
+            ## Future Work
+            {Suggestions or plans for extension}
+
+            ## Citation
+            {BibTeX or standard citation}
+            """
+        ),
+        show_tool_calls=True,
+    )
+
+    return agent
+
+def run_literature_search(query: str):
+    agent = literature_search_agent()
+    RunResponse = agent.run(query)
+    response = RunResponse.content
+    save_to_vector_db(text=response, path="literatureSearchAgentText")
+    return response
+        summarizationAgent.py
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    
+from dotenv import load_dotenv
+load_dotenv()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
+from langchain_core.output_parsers import StrOutputParser
+from langchain.prompts import PromptTemplate
+from literatureSearchAgent import run_literature_search
+from utils.vector_db_helper import save_to_vector_db
+from utils.vector_db_helper import load_vector_db
+
+def summarize_search_docs(query: str):
+    literature_response = run_literature_search(query=query)
+    vector_store = load_vector_db("literatureSearchAgentText")
+    retriever = vector_store.as_retriever()
+    documents = retriever.invoke(query)
+    
+    combined_docs = "\n\n".join(doc.page_content for doc in documents)
+    llm = ChatOpenAI(model="o4-mini", temperature=1)
+    prompt = PromptTemplate.from_template("""
+        This is the user query: {query}
+        This is the context: {combined_docs}
+
+        If the context contains relevant information to answer the query, then answer it.
+        If not, say 'i dont know'.                  
+    """)
+    chain = prompt | llm | StrOutputParser()
+    response = chain.invoke({
+        "query": query,
+        "combined_docs": combined_docs
+    })
+    save_to_vector_db(response, "summarizationAgentText")
+    return response
+
+query: str = input("Enter a query: ")
+print(summarize_search_docs(query=query))
+    Graph
+        GraphBuilder
+            graph_builder.py
+                import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    
+from dotenv import load_dotenv
+load_dotenv()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
+from langchain_core.output_parsers import StrOutputParser
+from langchain.prompts import PromptTemplate
+from literatureSearchAgent import run_literature_search
+from utils.vector_db_helper import save_to_vector_db
+from utils.vector_db_helper import load_vector_db
+
+def summarize_search_docs(query: str):
+    literature_response = run_literature_search(query=query)
+    vector_store = load_vector_db("literatureSearchAgentText")
+    retriever = vector_store.as_retriever()
+    documents = retriever.invoke(query)
+    
+    combined_docs = "\n\n".join(doc.page_content for doc in documents)
+    llm = ChatOpenAI(model="o4-mini", temperature=1)
+    prompt = PromptTemplate.from_template("""
+        This is the user query: {query}
+        This is the context: {combined_docs}
+
+        If the context contains relevant information to answer the query, then answer it.
+        If not, say 'i dont know'.                  
+    """)
+    chain = prompt | llm | StrOutputParser()
+    response = chain.invoke({
+        "query": query,
+        "combined_docs": combined_docs
+    })
+    save_to_vector_db(response, "summarizationAgentText")
+    return response
+
+query: str = input("Enter a query: ")
+print(summarize_search_docs(query=query))
+        Nodes
+            compile_results_node.py
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+from state import ResearchState
+
+def compile_results_node(state: ResearchState) -> ResearchState:
+    """Compile all results into a final output."""
+    final_output = f"""# Research Analysis for: {state.query}
+
+    ## Literature Search Results
+
+    {state.literature_results}
+
+    ## Summary of Research
+
+    {state.summary_results}
+
+    ## Research Hypotheses and Gaps
+
+    {state.hypothesis_results}
+"""
+    return state
+            hypothesis_genenration_node.py
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+from state import ResearchState
+
+from Agents.hypothesisGenerationAgent import generate_hypothesis_from_summaries
+
+def hypothesis_generation_node(state: ResearchState) -> ResearchState:
+    """Run the hypothesis generation agent and update the state."""
+    try:
+        hypothesis_results = generate_hypothesis_from_summaries(state.query)
+        state.hypothesis_results = hypothesis_results
+        return state
+    except Exception as e:
+        return {"errors": state.errors + [f"Hypothesis Generation error: {str(e)}"]}
+            literature_search_node.py
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+from state import ResearchState
+
+from Agents.literatureSearchAgent import run_literature_search
+
+def literature_search_node(state: ResearchState) -> ResearchState:
+    """Run the literature search agent and update the state."""
+    try:
+        literature_results = run_literature_search(query=state.query)
+        state.literature_results = literature_results
+        return state
+    except Exception as e:
+        return {"errors": state.errors + [f"Literature Search Error: {str(e)}"]}
+    
+            summarization_node.py
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+from state import ResearchState
+
+from Agents.summarizationAgent import summarize_search_docs
+    
+def summarization_node(state: ResearchState) -> ResearchState:
+    """Run the summarization agent and update the state."""
+    try:
+        summary_results = summarize_search_docs(state.query)
+        state.summary_results = summary_results
+        return state
+    except Exception as e:
+        return {"errors": state.errors + [f"Summarization error: {str(e)}"]}
+            state.py
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+from typing import List
+from pydantic import BaseModel
+
+class ResearchState(BaseModel):
+    query: str
+    literature_results: str
+    summary_results: str
+    hypothesis_results: str
+    errors: List[str]
+    final_output: str
+    
+    utils
+        vecor_db_helper.py
+             from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+
+def split_markdown_text(text):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size = 1000,
+        chunk_overlap = 100,
+    )
+    chunks = splitter.split_text(text)
+    return [Document(page_content=chunk) for chunk in chunks]
+
+def save_to_vector_db(text, path):
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small"
+    )
+    docs = split_markdown_text(text)
+    db = FAISS.from_documents(docs, embeddings)
+    db.save_local(path)
+
+def load_vector_db(path):
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    vector_store = FAISS.load_local(path, embeddings=embeddings, allow_dangerous_deserialization=True)
+    return vector_store    langgraph.json
+    main.py
+
+this is the complete project structure
