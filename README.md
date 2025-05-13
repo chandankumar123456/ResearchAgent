@@ -27,8 +27,8 @@ AgenticAI Research Assistant is a cutting-edge research agent designed to stream
 
 1. Clone the repository:  
      ```bash  
-     git clone https://github.com/your-repo/agenticai-research-assistant.git  
-     cd agenticai-research-assistant  
+     git clone https://github.com/chandankumar123456/ResearchAgent.git  
+     cd ResearchAgent  
      ```  
 
 2. Install dependencies:  

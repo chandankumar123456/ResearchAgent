@@ -101,7 +101,9 @@ def save_to_vector_db(text):
     db.save_local("literatureSearchAgentText")
 
 
-agent = literature_search_agent()
-response = agent.run("Find 3 recent papers on the use of Large Language Models (LLMs) for autonomous agents and task planning.")
-print(response.content)
-save_to_vector_db(text=response.content)
+def run_literature_search(query: str):
+    agent = literature_search_agent()
+    RunResponse = agent.run(query)
+    response = RunResponse.content
+    save_to_vector_db(text=response)
+    return response
