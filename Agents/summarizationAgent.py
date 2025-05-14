@@ -17,7 +17,7 @@ from utils.vector_db_helper import save_to_vector_db
 from utils.vector_db_helper import load_vector_db
 
 def summarize_search_docs(query: str):
-    literature_response = run_literature_search(query=query)
+    # literature_response = run_literature_search(query=query)
     vector_store = load_vector_db("literatureSearchAgentText")
     retriever = vector_store.as_retriever()
     documents = retriever.invoke(query)
@@ -39,5 +39,5 @@ def summarize_search_docs(query: str):
     save_to_vector_db(response, "summarizationAgentText")
     return response
 
-query: str = input("Enter a query: ")
-print(summarize_search_docs(query=query))
+# query: str = input("Enter a query: ")
+# print(summarize_search_docs(query=query))

@@ -20,4 +20,5 @@ def compile_results_node(state: ResearchState) -> ResearchState:
 
     {state.hypothesis_results}
 """
+    state.final_output = final_output
     return state

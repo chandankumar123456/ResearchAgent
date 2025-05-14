@@ -10,6 +10,6 @@ class ResearchState(BaseModel):
     literature_results: str
     summary_results: str
     hypothesis_results: str
-    errors: List[str]
+    errors: List[str] = []
     final_output: str
     

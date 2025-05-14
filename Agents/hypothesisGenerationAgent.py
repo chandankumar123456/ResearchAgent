@@ -72,7 +72,7 @@ def generate_hypothesis_from_summaries(query: str):
     Generate research hypotheses based on the summarization results stored in the vector database.
     """
     try:
-        summarize_agent_response = summarize_search_docs(query=query)
+        # summarize_agent_response = summarize_search_docs(query=query)
         vector_store = load_vector_db("summarizationAgentText")
     except Exception as e:
         print(f"Error loading summarization vector database: {e}")
