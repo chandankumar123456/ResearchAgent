@@ -101,7 +101,7 @@ You will be prompted to enter your research topic or question. The system will t
 The project includes LangGraph configuration (`langgraph.json`) for workflow management. To visualize and interact with the workflow using LangGraph CLI:
 
 ```bash
-langgraph-dev
+langgraph dev
 ```
 
 This will start the LangGraph interface, allowing you to visualize and test the research workflow through the command line interface.
