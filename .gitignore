@@ -7,3 +7,4 @@ summarizationAgentText/
 research_agent.egg-info/
 hypothesisGenerationAgentText/
 literatureSearchAgentText/
+.qodo

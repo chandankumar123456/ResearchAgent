@@ -15,6 +15,23 @@ from textwrap import dedent
 from utils.vector_db_helper import load_vector_db, save_to_vector_db
 from summarizationAgent import summarize_search_docs
 def hypothesis_generation_agent():
+    """
+    Creates and configures a research hypothesis generation agent.
+
+    This agent analyzes academic literature summaries to identify research gaps and 
+    generate novel, testable hypotheses. It leverages reasoning tools and a language 
+    model to provide a detailed Markdown-formatted report, suitable for researchers 
+    seeking future directions.
+
+    Key capabilities:
+    - Identifies methodological gaps and limitations.
+    - Detects underexplored application areas.
+    - Proposes novel research hypotheses and integration ideas.
+
+    Returns:
+        Agent: A configured instance of the Agent class, ready to process literature 
+        summaries and generate scholarly hypotheses.
+    """
     agent = Agent(
         name="Research Hypothesis Generator",
         instructions=[
@@ -69,7 +86,25 @@ def hypothesis_generation_agent():
 
 def generate_hypothesis_from_summaries(query: str):
     """
-    Generate research hypotheses based on the summarization results stored in the vector database.
+    Generates research hypotheses based on stored summarization results for a given query.
+
+    This function retrieves summarized literature related to the input query from a vector 
+    database, analyzes the content using a hypothesis generation agent, and outputs a structured 
+    Markdown report with research gaps, proposed hypotheses, and future directions.
+
+    Steps:
+    1. Load the vector database containing summarization results.
+    2. Retrieve relevant documents using the input query.
+    3. Combine documents into a single text block.
+    4. Run the hypothesis generation agent with the combined summaries.
+    5. Save the output to a vector database.
+    6. Return the hypothesis report or an appropriate error message.
+
+    Args:
+        query (str): The research question or topic for which hypotheses should be generated.
+
+    Returns:
+        str: The agent's Markdown-formatted response or an error message.
     """
     try:
         # summarize_agent_response = summarize_search_docs(query=query)

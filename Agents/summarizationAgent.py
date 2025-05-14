@@ -17,6 +17,22 @@ from utils.vector_db_helper import save_to_vector_db
 from utils.vector_db_helper import load_vector_db
 
 def summarize_search_docs(query: str):
+    """
+    Summarizes relevant academic documents based on a user's query.
+
+    This function loads previously saved academic literature (from the vector store),
+    retrieves documents relevant to the given query using semantic search, and uses an LLM 
+    to generate a concise summary or answer based on the context. If no relevant information
+    is found, it returns "i don't know".
+
+    The final summary is stored in a separate vector database for future retrieval.
+
+    Args:
+        query (str): The user's research question or topic to summarize.
+
+    Returns:
+        str: A generated summary or response to the query based on retrieved documents.
+    """
     # literature_response = run_literature_search(query=query)
     vector_store = load_vector_db("literatureSearchAgentText")
     retriever = vector_store.as_retriever()
